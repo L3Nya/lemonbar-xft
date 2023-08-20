@@ -879,8 +879,8 @@ font_load (const char *pattern)
             fprintf(stderr, "Failed to allocate %d offsets", font_count + 1);
             exit(EXIT_FAILURE);
         }
+        offsets_y[font_count] = 0;
     }
-    offsets_y[font_count] = 0;
     font_list[font_count++] = ret;
 }
 
