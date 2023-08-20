@@ -15,11 +15,14 @@ CFDEBUG = -g3 -pedantic -Wall -Wunused-parameter -Wlong-long \
 EXEC = lemonbar
 SRCS = lemonbar.c utils.c
 OBJS = ${SRCS:.c=.o}
+EXEC_UTIL = xft_str_box
+SRCS_UTIL = xft_str_box.c
+OBJS_UTIL = ${SRCS_UTIL:.c=.o}
 
 PREFIX?=/usr
 BINDIR=${PREFIX}/bin
 
-all: ${EXEC}
+all: ${EXEC} ${EXEC_UTIL}
 
 doc: README.pod
 	pod2man --section=1 --center="lemonbar Manual" --name "lemonbar" --release="lemonbar $(VERSION)" README.pod > lemonbar.1
@@ -30,19 +33,25 @@ doc: README.pod
 ${EXEC}: ${OBJS}
 	${CC} -o ${EXEC} ${OBJS} ${LDFLAGS}
 
+${EXEC_UTIL}: ${OBJS_UTIL}
+	${CC} -o ${EXEC_UTIL} ${OBJS_UTIL} ${LDFLAGS}
+
 debug: ${EXEC}
 debug: CC += ${CFDEBUG}
 
 clean:
 	rm -f ./*.o ./*.1
 	rm -f ./${EXEC}
+	rm -f ./${EXEC_UTIL}
 
 install: lemonbar doc
 	install -D -m 755 lemonbar ${DESTDIR}${BINDIR}/lemonbar
+	install -D -m 755 xft_str_box ${DESTDIR}${BINDIR}/xft_str_box
 	install -D -m 644 lemonbar.1 ${DESTDIR}${PREFIX}/share/man/man1/lemonbar.1
 
 uninstall:
 	rm -f ${DESTDIR}${BINDIR}/lemonbar
+	rm -f ${DESTDIR}${BINDIR}/xft_str_box
 	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/lemonbar.1
 
 .PHONY: all debug clean install

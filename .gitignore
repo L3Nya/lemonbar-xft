@@ -1,4 +1,5 @@
 lemonbar
+xft_str_box
 *.o
 *.swp
 *~
