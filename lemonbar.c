@@ -873,17 +873,27 @@ font_load (const char *pattern)
         fprintf(stderr, "Failed to allocate %d font descriptors", font_count + 1);
         exit(EXIT_FAILURE);
     }
-    offsets_y = xreallocarray(offsets_y, font_count + 1, sizeof(int));
-    if (!offsets_y) {
-        fprintf(stderr, "Failed to allocate %d offsets", font_count + 1);
-        exit(EXIT_FAILURE);
+    if (offset_y_count < font_count + 1) {
+        offsets_y = xreallocarray(offsets_y, font_count + 1, sizeof(int));
+        if (!offsets_y) {
+            fprintf(stderr, "Failed to allocate %d offsets", font_count + 1);
+            exit(EXIT_FAILURE);
+        }
     }
-    font_list[font_count++] = ret;
     offsets_y[font_count] = 0;
+    font_list[font_count++] = ret;
 }
 
 void add_y_offset(int offset) {
-    offsets_y[offset_y_count++] = strtol(optarg, NULL, 10);
+    if (font_count < offset_y_count + 1) {
+        offsets_y = xreallocarray(offsets_y, offset_y_count + 1, sizeof(int));
+        if (!offsets_y) {
+            fprintf(stderr, "Failed to allocate %d offsets", offset_y_count + 1);
+            exit(EXIT_FAILURE);
+        }
+    }
+    offsets_y[offset_y_count] = strtol(optarg, NULL, 10);
+    ++offset_y_count;
 }
 
 
@@ -945,9 +955,7 @@ set_ewmh_atoms (void)
 
         xcb_change_property(c, XCB_PROP_MODE_REPLACE, mon->window, atom_list[NET_WM_WINDOW_TYPE], XCB_ATOM_ATOM, 32, 1, &atom_list[NET_WM_WINDOW_TYPE_DOCK]);
         xcb_change_property(c, XCB_PROP_MODE_APPEND,  mon->window, atom_list[NET_WM_STATE], XCB_ATOM_ATOM, 32, 2, &atom_list[NET_WM_STATE_STICKY]);
-        xcb_change_property(c, XCB_PROP_MODE_REPLACE, mon->window, atom_list[NET_WM_DESKTOP], XCB_ATOM_CARDINAL, 32, 1, (const uint32_t []) {
-            0u - 1u
-        } );
+        xcb_change_property(c, XCB_PROP_MODE_REPLACE, mon->window, atom_list[NET_WM_DESKTOP], XCB_ATOM_CARDINAL, 32, 1, (const uint32_t []) { -1 } );
         xcb_change_property(c, XCB_PROP_MODE_REPLACE, mon->window, atom_list[NET_WM_STRUT_PARTIAL], XCB_ATOM_CARDINAL, 32, 12, strut);
         xcb_change_property(c, XCB_PROP_MODE_REPLACE, mon->window, atom_list[NET_WM_STRUT], XCB_ATOM_CARDINAL, 32, 4, strut);
         xcb_change_property(c, XCB_PROP_MODE_REPLACE, mon->window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, 3, "bar");
@@ -1470,6 +1478,7 @@ cleanup (void)
     free(output_names);
 
     free(area_stack.ptr);
+
     for (int i = 0; i < font_count; i++) {
         if (font_list[i]->xft_ft) {
             XftFontClose (dpy, font_list[i]->xft_ft);
@@ -1502,21 +1511,6 @@ cleanup (void)
         xcb_free_gc(c, gc[GC_ATTR]);
     if (c)
         xcb_disconnect(c);
-}
-
-char*
-strip_path(char *path)
-{
-    char *slash;
-
-    if (path == NULL || *path == '\0')
-        return strdup("lemonbar");
-
-    slash = strrchr(path, '/');
-    if (slash != NULL)
-        return strndup(slash + 1, 31);
-
-    return strndup(path, 31);
 }
 
 void
@@ -1564,7 +1558,7 @@ main (int argc, char **argv)
         switch (ch) {
             case 'h':
                 printf ("lemonbar version %s patched with XFT support\n", VERSION);
-                printf ("usage: %s [-h | -g | -O | -b | -d | -f | -p | -n | -u | -B | -F]\n"
+                printf ("usage: %s [-h | -g | -O | -b | -d | -f | -p | -n | -u | -B | -F | -o]\n"
                         "\t-h Show this help\n"
                         "\t-g Set the bar geometry {width}x{height}+{xoffset}+{yoffset}\n"
                         "\t-O Add randr output by name\n"
